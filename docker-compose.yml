@@ -1,0 +1,85 @@
+version: '3.8'
+
+# Auditor de Contratos - Stack de Monitoramento
+# Bootcamp Itaú FIAP 2026
+#
+# Para executar:
+#   docker-compose up -d
+#
+# Acesse:
+#   - API: http://localhost:8000
+#   - API Docs: http://localhost:8000/docs
+#   - Prometheus: http://localhost:9090
+#   - Grafana: http://localhost:3000 (admin/admin)
+
+services:
+  # ========================================
+  # Auditor API
+  # ========================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./.cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - auditor-network
+
+  # ========================================
+  # Prometheus - Coleta de Métricas
+  # ========================================
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - auditor-network
+
+  # ========================================
+  # Grafana - Dashboards
+  # ========================================
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - auditor-network
+
+networks:
+  auditor-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
