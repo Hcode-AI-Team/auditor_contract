@@ -1,470 +1,681 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aula 2: RAG & Agentes Inteligentes | Bootcamp Itaú FIAP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet">
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css"
+      rel="stylesheet"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <style>
-        /* Palette: "Itaú Banking AI" Theme */
-        /* Background: #0a0e1a (Deep Navy) */
-        /* Primary: #D4AF37 (Gold - Itaú accent) */
-        /* Secondary: #3b82f6 (Blue-500) for Data, #10b981 (Green-500) for Success */
+      /* Palette: "Itaú Banking AI" Theme */
+      /* Background: #0a0e1a (Deep Navy) */
+      /* Primary: #D4AF37 (Gold - Itaú accent) */
+      /* Secondary: #3b82f6 (Blue-500) for Data, #10b981 (Green-500) for Success */
 
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;700&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;700&display=swap");
 
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          "IBM Plex Sans",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: linear-gradient(135deg, #0a0e1a 0%, #020617 100%);
+        color: #e2e8f0;
+        line-height: 1.6;
+      }
+
+      .font-mono {
+        font-family: "Fira Code", "Consolas", monospace;
+        font-variant-ligatures: normal;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0e1a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #f5c842 0%, #d4af37 100%);
+      }
+
+      /* Animations */
+      .fade-in {
+        animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        opacity: 0;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .slide-in-left {
+        animation: slideInLeft 0.5s ease-out forwards;
+      }
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .pulse-border {
+        animation: pulseBorder 2s infinite;
+      }
+      @keyframes pulseBorder {
+        0% {
+          border-color: rgba(212, 175, 55, 0.4);
+          box-shadow: 0 0 0 rgba(212, 175, 55, 0);
+        }
+        50% {
+          border-color: rgba(212, 175, 55, 0.8);
+          box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+        100% {
+          border-color: rgba(212, 175, 55, 0.4);
+          box-shadow: 0 0 0 rgba(212, 175, 55, 0);
+        }
+      }
+
+      .glow {
+        animation: glow 3s ease-in-out infinite;
+      }
+      @keyframes glow {
+        0%,
+        100% {
+          text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+        50% {
+          text-shadow:
+            0 0 20px rgba(212, 175, 55, 0.8),
+            0 0 30px rgba(212, 175, 55, 0.4);
+        }
+      }
+
+      /* Nav Items */
+      .nav-item {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 3px solid transparent;
+        position: relative;
+        overflow: hidden;
+      }
+      .nav-item::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(212, 175, 55, 0.1) 0%,
+          transparent 100%
+        );
+        transition: width 0.3s ease;
+      }
+      .nav-item:hover::before {
+        width: 100%;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background: rgba(212, 175, 55, 0.08);
+        border-left-color: #d4af37;
+        color: #f5c842;
+        transform: translateX(2px);
+      }
+      .nav-item.active {
+        font-weight: 600;
+        box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.1);
+      }
+      .nav-section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: #64748b;
+        padding: 0.75rem 1.5rem;
+        margin-top: 1rem;
+        text-transform: uppercase;
+      }
+
+      /* Chunk Visuals */
+      .chunk {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+      }
+      .chunk:hover {
+        background-color: rgba(212, 175, 55, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+      }
+      .chunk.active {
+        background-color: rgba(212, 175, 55, 0.25);
+        border: 1px solid #d4af37;
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+      }
+
+      /* Code Blocks */
+      .code-block-container {
+        position: relative;
+        margin: 1.5rem 0;
+      }
+      .copy-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: #d4af37;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .copy-btn:hover {
+        background: rgba(212, 175, 55, 0.2);
+        transform: translateY(-1px);
+      }
+
+      /* Cards & Panels */
+      .card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(100, 116, 139, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      .card:hover {
+        border-color: rgba(212, 175, 55, 0.5);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .gold-accent {
+        color: #d4af37;
+      }
+      .gold-border {
+        border-color: #d4af37;
+      }
+
+      /* Badge */
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .badge-gold {
+        background: linear-gradient(
+          135deg,
+          rgba(212, 175, 55, 0.2) 0%,
+          rgba(212, 175, 55, 0.1) 100%
+        );
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        color: #f5c842;
+      }
+      .badge-blue {
+        background: rgba(59, 130, 246, 0.2);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        color: #60a5fa;
+      }
+      .badge-green {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #34d399;
+      }
+      .badge-purple {
+        background: rgba(168, 85, 247, 0.2);
+        border: 1px solid rgba(168, 85, 247, 0.4);
+        color: #c084fc;
+      }
+      .badge-orange {
+        background: rgba(249, 115, 22, 0.2);
+        border: 1px solid rgba(249, 115, 22, 0.4);
+        color: #fb923c;
+      }
+
+      /* Print Styles */
+      @media print {
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+          background: white !important;
+          color: black !important;
+          text-shadow: none !important;
+          box-shadow: none !important;
         }
 
         body {
-            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0a0e1a 0%, #020617 100%);
-            color: #e2e8f0;
-            line-height: 1.6;
+          font-family: "IBM Plex Sans", sans-serif;
+          font-size: 12pt;
+          line-height: 1.5;
         }
 
-        .font-mono { 
-            font-family: 'Fira Code', 'Consolas', monospace; 
-            font-variant-ligatures: normal;
+        .no-print,
+        aside,
+        .copy-btn,
+        button {
+          display: none !important;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0e1a; }
-        ::-webkit-scrollbar-thumb { 
-            background: linear-gradient(180deg, #D4AF37 0%, #b8941f 100%); 
-            border-radius: 4px; 
-        }
-        ::-webkit-scrollbar-thumb:hover { 
-            background: linear-gradient(180deg, #f5c842 0%, #D4AF37 100%); 
+        main {
+          margin: 0 !important;
+          padding: 20pt !important;
         }
 
-        /* Animations */
-        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; opacity: 0; }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(20px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-
-        .slide-in-left { animation: slideInLeft 0.5s ease-out forwards; }
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .pulse-border { animation: pulseBorder 2s infinite; }
-        @keyframes pulseBorder { 
-            0% { border-color: rgba(212, 175, 55, 0.4); box-shadow: 0 0 0 rgba(212, 175, 55, 0); }
-            50% { border-color: rgba(212, 175, 55, 0.8); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
-            100% { border-color: rgba(212, 175, 55, 0.4); box-shadow: 0 0 0 rgba(212, 175, 55, 0); }
-        }
-
-        .glow { animation: glow 3s ease-in-out infinite; }
-        @keyframes glow {
-            0%, 100% { text-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
-            50% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.8), 0 0 30px rgba(212, 175, 55, 0.4); }
-        }
-
-        /* Nav Items */
-        .nav-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-left: 3px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 0;
-            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
-            transition: width 0.3s ease;
-        }
-        .nav-item:hover::before {
-            width: 100%;
-        }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(212, 175, 55, 0.08);
-            border-left-color: #D4AF37;
-            color: #f5c842;
-            transform: translateX(2px);
-        }
-        .nav-item.active {
-            font-weight: 600;
-            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.1);
-        }
-        .nav-section-title {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            color: #64748b;
-            padding: 0.75rem 1.5rem;
-            margin-top: 1rem;
-            text-transform: uppercase;
-        }
-
-        /* Chunk Visuals */
-        .chunk {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-        }
-        .chunk:hover { 
-            background-color: rgba(212, 175, 55, 0.15); 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
-        }
-        .chunk.active { 
-            background-color: rgba(212, 175, 55, 0.25); 
-            border: 1px solid #D4AF37;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-        }
-
-        /* Code Blocks */
-        .code-block-container {
-            position: relative;
-            margin: 1.5rem 0;
-        }
-        .copy-btn {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: rgba(212, 175, 55, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            color: #D4AF37;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        .copy-btn:hover {
-            background: rgba(212, 175, 55, 0.2);
-            transform: translateY(-1px);
-        }
-
-        /* Cards & Panels */
         .card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        .card:hover {
-            border-color: rgba(212, 175, 55, 0.5);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px);
+          border: 1px solid #333 !important;
+          page-break-inside: avoid;
+          margin-bottom: 20pt;
+          padding: 15pt;
         }
 
-        .gold-accent {
-            color: #D4AF37;
-        }
-        .gold-border {
-            border-color: #D4AF37;
+        h1,
+        h2,
+        h3 {
+          page-break-after: avoid;
+          color: #000 !important;
+          margin-top: 15pt;
         }
 
-        /* Badge */
+        pre,
+        code {
+          border: 1px solid #ccc !important;
+          page-break-inside: avoid;
+          font-family: "Fira Code", "Courier New", monospace;
+          font-size: 9pt;
+          padding: 10pt;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+        }
+
         .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .badge-gold {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%);
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            color: #f5c842;
-        }
-        .badge-blue {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.4);
-            color: #60a5fa;
-        }
-        .badge-green {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: #34d399;
+          border: 1px solid #333 !important;
+          padding: 2pt 6pt;
         }
 
-        /* Print Styles */
-        @media print {
-            * { 
-                background: white !important; 
-                color: black !important; 
-                text-shadow: none !important;
-                box-shadow: none !important;
-            }
-            
-            body { 
-                font-family: 'IBM Plex Sans', sans-serif;
-                font-size: 12pt;
-                line-height: 1.5;
-            }
-            
-            .no-print, aside, .copy-btn, button { 
-                display: none !important; 
-            }
-            
-            main {
-                margin: 0 !important;
-                padding: 20pt !important;
-            }
-            
-            .card { 
-                border: 1px solid #333 !important; 
-                page-break-inside: avoid;
-                margin-bottom: 20pt;
-                padding: 15pt;
-            }
-            
-            h1, h2, h3 { 
-                page-break-after: avoid;
-                color: #000 !important;
-                margin-top: 15pt;
-            }
-            
-            pre, code {
-                border: 1px solid #ccc !important;
-                page-break-inside: avoid;
-                font-family: 'Fira Code', 'Courier New', monospace;
-                font-size: 9pt;
-                padding: 10pt;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-            
-            .badge {
-                border: 1px solid #333 !important;
-                padding: 2pt 6pt;
-            }
-            
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            
-            table, th, td {
-                border: 1px solid #333 !important;
-            }
-            
-            th, td {
-                padding: 8pt;
-                text-align: left;
-            }
-            
-            /* Add URLs after links */
-            a[href]:after {
-                content: " (" attr(href) ")";
-                font-size: 9pt;
-                color: #666;
-            }
-            
-            /* Print page numbers */
-            @page {
-                margin: 2cm;
-                
-                @bottom-right {
-                    content: "Página " counter(page);
-                    font-size: 9pt;
-                }
-            }
+        table {
+          border-collapse: collapse;
+          width: 100%;
         }
 
-        /* Accessibility - Focus styles */
-        *:focus {
-            outline: 2px solid #D4AF37;
-            outline-offset: 2px;
+        table,
+        th,
+        td {
+          border: 1px solid #333 !important;
         }
 
-        button:focus, a:focus, input:focus, textarea:focus {
-            outline: 2px solid #D4AF37;
-            outline-offset: 2px;
+        th,
+        td {
+          padding: 8pt;
+          text-align: left;
         }
 
-        /* Reduced motion for accessibility */
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
+        /* Add URLs after links */
+        a[href]:after {
+          content: " (" attr(href) ")";
+          font-size: 9pt;
+          color: #666;
         }
 
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .card {
-                border-width: 2px;
-            }
-            
-            button, .nav-item {
-                border: 2px solid currentColor;
-            }
+        /* Print page numbers */
+        @page {
+          margin: 2cm;
+
+          @bottom-right {
+            content: "Página " counter(page);
+            font-size: 9pt;
+          }
         }
+      }
+
+      /* Accessibility - Focus styles */
+      *:focus {
+        outline: 2px solid #d4af37;
+        outline-offset: 2px;
+      }
+
+      button:focus,
+      a:focus,
+      input:focus,
+      textarea:focus {
+        outline: 2px solid #d4af37;
+        outline-offset: 2px;
+      }
+
+      /* Reduced motion for accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        .card {
+          border-width: 2px;
+        }
+
+        button,
+        .nav-item {
+          border: 2px solid currentColor;
+        }
+      }
     </style>
-</head>
-<body class="flex h-screen overflow-hidden text-sm md:text-base">
-
+  </head>
+  <body class="flex h-screen overflow-hidden text-sm md:text-base">
     <!-- Sidebar -->
-    <aside role="complementary" aria-label="Navegação lateral" class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col z-20 hidden md:flex shadow-2xl">
-        <div class="p-6 border-b border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950">
-            <h1 class="text-xl font-bold gold-accent tracking-wider flex items-center gap-2 glow">
-                <i class="fas fa-brain"></i> RAG & AGENTES
-            </h1>
-            <p class="text-xs text-slate-500 mt-1 font-medium">Bootcamp Itaú | FIAP 2026</p>
+    <aside
+      role="complementary"
+      aria-label="Navegação lateral"
+      class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col z-20 hidden md:flex shadow-2xl"
+    >
+      <div
+        class="p-6 border-b border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950"
+      >
+        <h1
+          class="text-xl font-bold gold-accent tracking-wider flex items-center gap-2 glow"
+        >
+          <i class="fas fa-brain"></i> RAG & AGENTES
+        </h1>
+        <p class="text-xs text-slate-500 mt-1 font-medium">
+          Bootcamp Itaú | FIAP 2026
+        </p>
+      </div>
+
+      <nav
+        role="navigation"
+        aria-label="Menu principal"
+        class="flex-1 py-4 overflow-y-auto"
+      >
+        <!-- Fundamentos -->
+        <div class="nav-section-title">
+          <i class="fas fa-book-open mr-1"></i> Fundamentos
         </div>
-        
-        <nav role="navigation" aria-label="Menu principal" class="flex-1 py-4 overflow-y-auto">
-            <!-- Fundamentos -->
-            <div class="nav-section-title">
-                <i class="fas fa-book-open mr-1"></i> Fundamentos
-            </div>
-            <button onclick="router('intro-rag')" id="nav-intro-rag" class="nav-item active w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-lightbulb w-5 text-center mr-2"></i> Por que RAG?
-            </button>
-            <button onclick="router('rag-architecture')" id="nav-rag-architecture" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-sitemap w-5 text-center mr-2"></i> Arquitetura Básica
-            </button>
-            <button onclick="router('rag-vs-finetune')" id="nav-rag-vs-finetune" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-balance-scale w-5 text-center mr-2"></i> RAG vs Fine-tuning
-            </button>
+        <button
+          onclick="router('intro-rag')"
+          id="nav-intro-rag"
+          class="nav-item active w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-lightbulb w-5 text-center mr-2"></i> Por que RAG?
+        </button>
+        <button
+          onclick="router('rag-architecture')"
+          id="nav-rag-architecture"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-sitemap w-5 text-center mr-2"></i> Arquitetura Básica
+        </button>
+        <button
+          onclick="router('rag-vs-finetune')"
+          id="nav-rag-vs-finetune"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-balance-scale w-5 text-center mr-2"></i> RAG vs
+          Fine-tuning
+        </button>
 
-            <!-- Engenharia de Dados -->
-            <div class="nav-section-title">
-                <i class="fas fa-database mr-1"></i> Engenharia de Dados
-            </div>
-            <button onclick="router('chunking')" id="nav-chunking" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-cut w-5 text-center mr-2"></i> Chunking Strategies
-            </button>
-            <button onclick="router('embeddings')" id="nav-embeddings" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-project-diagram w-5 text-center mr-2"></i> Embedding Models
-            </button>
-            <button onclick="router('vector-dbs')" id="nav-vector-dbs" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-cubes w-5 text-center mr-2"></i> Vector Databases
-            </button>
-
-            <!-- RAG Avançado -->
-            <div class="nav-section-title">
-                <i class="fas fa-rocket mr-1"></i> RAG Avançado
-            </div>
-            <button onclick="router('hybrid-search')" id="nav-hybrid-search" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-search-plus w-5 text-center mr-2"></i> Hybrid Search
-            </button>
-            <button onclick="router('reranking')" id="nav-reranking" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-sort-amount-down w-5 text-center mr-2"></i> Re-ranking
-            </button>
-            <button onclick="router('hyde')" id="nav-hyde" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-magic w-5 text-center mr-2"></i> HyDE
-            </button>
-            <button onclick="router('parent-child')" id="nav-parent-child" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-layer-group w-5 text-center mr-2"></i> Parent-Child Chunking
-            </button>
-            <button onclick="router('raptor')" id="nav-raptor" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-network-wired w-5 text-center mr-2"></i> RAPTOR
-            </button>
-
-            <!-- Agentes -->
-            <div class="nav-section-title">
-                <i class="fas fa-robot mr-1"></i> Agentes LangChain
-            </div>
-            <button onclick="router('react-pattern')" id="nav-react-pattern" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-brain w-5 text-center mr-2"></i> ReAct Pattern
-            </button>
-            <button onclick="router('tool-calling')" id="nav-tool-calling" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-tools w-5 text-center mr-2"></i> Tool Calling
-            </button>
-            <button onclick="router('planning')" id="nav-planning" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-tasks w-5 text-center mr-2"></i> Planning
-            </button>
-            <button onclick="router('memory')" id="nav-memory" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-memory w-5 text-center mr-2"></i> Memory Systems
-            </button>
-            <button onclick="router('agent-arch')" id="nav-agent-arch" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-object-group w-5 text-center mr-2"></i> Agent Architectures
-            </button>
-
-            <!-- Lab -->
-            <div class="nav-section-title">
-                <i class="fas fa-flask mr-1"></i> Lab Prático
-            </div>
-            <button onclick="router('lab-overview')" id="nav-lab-overview" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-diagram-project w-5 text-center mr-2"></i> Arquitetura do Projeto
-            </button>
-            <button onclick="router('lab-code')" id="nav-lab-code" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-code w-5 text-center mr-2"></i> Code Walkthrough
-            </button>
-            <button onclick="router('lab-exercises')" id="nav-lab-exercises" class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300">
-                <i class="fas fa-clipboard-check w-5 text-center mr-2"></i> Exercícios
-            </button>
-        </nav>
-
-        <div class="p-4 border-t border-slate-800 bg-slate-950 no-print">
-            <div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-lg p-3 text-xs text-slate-400 border border-slate-700/50">
-                <div class="flex justify-between mb-1.5">
-                    <span class="font-medium">ChromaDB Status</span>
-                    <span class="text-green-400 font-semibold flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                        Connected
-                    </span>
-                </div>
-                <div class="w-full bg-slate-700/50 h-1.5 rounded-full overflow-hidden">
-                    <div class="bg-gradient-to-r from-blue-500 to-green-500 w-1/3 h-full"></div>
-                </div>
-                <div class="mt-1.5 text-[10px] text-right text-slate-500 font-mono">342 vectors indexed</div>
-            </div>
+        <!-- Engenharia de Dados -->
+        <div class="nav-section-title">
+          <i class="fas fa-database mr-1"></i> Engenharia de Dados
         </div>
+        <button
+          onclick="router('chunking')"
+          id="nav-chunking"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-cut w-5 text-center mr-2"></i> Chunking Strategies
+        </button>
+        <button
+          onclick="router('embeddings')"
+          id="nav-embeddings"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-project-diagram w-5 text-center mr-2"></i> Embedding
+          Models
+        </button>
+        <button
+          onclick="router('vector-dbs')"
+          id="nav-vector-dbs"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-cubes w-5 text-center mr-2"></i> Vector Databases
+        </button>
+
+        <!-- RAG Avançado -->
+        <div class="nav-section-title">
+          <i class="fas fa-rocket mr-1"></i> RAG Avançado
+        </div>
+        <button
+          onclick="router('hybrid-search')"
+          id="nav-hybrid-search"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-search-plus w-5 text-center mr-2"></i> Hybrid Search
+        </button>
+        <button
+          onclick="router('reranking')"
+          id="nav-reranking"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-sort-amount-down w-5 text-center mr-2"></i>
+          Re-ranking
+        </button>
+        <button
+          onclick="router('hyde')"
+          id="nav-hyde"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-magic w-5 text-center mr-2"></i> HyDE
+        </button>
+        <button
+          onclick="router('parent-child')"
+          id="nav-parent-child"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-layer-group w-5 text-center mr-2"></i> Parent-Child
+          Chunking
+        </button>
+        <button
+          onclick="router('raptor')"
+          id="nav-raptor"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-network-wired w-5 text-center mr-2"></i> RAPTOR
+        </button>
+
+        <!-- Agentes -->
+        <div class="nav-section-title">
+          <i class="fas fa-robot mr-1"></i> Agentes LangChain
+        </div>
+        <button
+          onclick="router('react-pattern')"
+          id="nav-react-pattern"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-brain w-5 text-center mr-2"></i> ReAct Pattern
+        </button>
+        <button
+          onclick="router('tool-calling')"
+          id="nav-tool-calling"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-tools w-5 text-center mr-2"></i> Tool Calling
+        </button>
+        <button
+          onclick="router('planning')"
+          id="nav-planning"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-tasks w-5 text-center mr-2"></i> Planning
+        </button>
+        <button
+          onclick="router('memory')"
+          id="nav-memory"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-memory w-5 text-center mr-2"></i> Memory Systems
+        </button>
+        <button
+          onclick="router('agent-arch')"
+          id="nav-agent-arch"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-object-group w-5 text-center mr-2"></i> Agent
+          Architectures
+        </button>
+
+        <!-- Lab -->
+        <div class="nav-section-title">
+          <i class="fas fa-flask mr-1"></i> Lab Prático
+        </div>
+        <button
+          onclick="router('lab-overview')"
+          id="nav-lab-overview"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-diagram-project w-5 text-center mr-2"></i>
+          Arquitetura do Projeto
+        </button>
+        <button
+          onclick="router('lab-code')"
+          id="nav-lab-code"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-code w-5 text-center mr-2"></i> Code Walkthrough
+        </button>
+        <button
+          onclick="router('lab-exercises')"
+          id="nav-lab-exercises"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-clipboard-check w-5 text-center mr-2"></i> Exercícios
+        </button>
+        <button
+          onclick="router('lab-hybrid-search')"
+          id="nav-lab-hybrid-search"
+          class="nav-item w-full text-left px-6 py-2.5 text-sm text-slate-300"
+        >
+          <i class="fas fa-search-dollar w-5 text-center mr-2"></i> Lab: Hybrid
+          Search
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-slate-800 bg-slate-950 no-print">
+        <div
+          class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-lg p-3 text-xs text-slate-400 border border-slate-700/50"
+        >
+          <div class="flex justify-between mb-1.5">
+            <span class="font-medium">ChromaDB Status</span>
+            <span class="text-green-400 font-semibold flex items-center gap-1">
+              <span
+                class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"
+              ></span>
+              Connected
+            </span>
+          </div>
+          <div
+            class="w-full bg-slate-700/50 h-1.5 rounded-full overflow-hidden"
+          >
+            <div
+              class="bg-gradient-to-r from-blue-500 to-green-500 w-1/3 h-full"
+            ></div>
+          </div>
+          <div class="mt-1.5 text-[10px] text-right text-slate-500 font-mono">
+            342 vectors indexed
+          </div>
+        </div>
+      </div>
     </aside>
 
     <!-- Mobile Header -->
-    <div class="md:hidden fixed top-0 w-full bg-slate-900 border-b border-slate-800 z-30 flex justify-between items-center p-4 shadow-lg">
-        <h1 class="font-bold gold-accent text-sm">
-            <i class="fas fa-brain mr-1"></i> RAG & AGENTES
-        </h1>
-        <button onclick="toggleMobileMenu()" class="text-slate-300 hover:text-gold-accent transition">
-            <i class="fas fa-bars text-lg"></i>
-        </button>
+    <div
+      class="md:hidden fixed top-0 w-full bg-slate-900 border-b border-slate-800 z-30 flex justify-between items-center p-4 shadow-lg"
+    >
+      <h1 class="font-bold gold-accent text-sm">
+        <i class="fas fa-brain mr-1"></i> RAG & AGENTES
+      </h1>
+      <button
+        onclick="toggleMobileMenu()"
+        class="text-slate-300 hover:text-gold-accent transition"
+      >
+        <i class="fas fa-bars text-lg"></i>
+      </button>
     </div>
 
     <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="md:hidden fixed inset-0 bg-slate-950/95 z-40 hidden backdrop-blur-sm">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold gold-accent">Menu de Navegação</h2>
-                <button onclick="toggleMobileMenu()" class="text-slate-300">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="space-y-2 overflow-y-auto max-h-[80vh]">
-                <!-- Nav items will be cloned here via JS -->
-            </div>
+    <div
+      id="mobile-menu"
+      class="md:hidden fixed inset-0 bg-slate-950/95 z-40 hidden backdrop-blur-sm"
+    >
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold gold-accent">Menu de Navegação</h2>
+          <button onclick="toggleMobileMenu()" class="text-slate-300">
+            <i class="fas fa-times text-xl"></i>
+          </button>
         </div>
+        <div class="space-y-2 overflow-y-auto max-h-[80vh]">
+          <!-- Nav items will be cloned here via JS -->
+        </div>
+      </div>
     </div>
 
     <!-- Main Content -->
-    <main id="app-content" role="main" aria-live="polite" class="flex-1 bg-slate-950 p-6 md:p-10 mt-14 md:mt-0 overflow-y-auto relative">
-        <!-- Views injected here -->
+    <main
+      id="app-content"
+      role="main"
+      aria-live="polite"
+      class="flex-1 bg-slate-950 p-6 md:p-10 mt-14 md:mt-0 overflow-y-auto relative"
+    >
+      <!-- Views injected here -->
     </main>
 
     <!-- JS Logic -->
     <script>
-        // --- DATA ---
-        
-        // Mock Contract Text for Chunking/Lab
-        const CONTRACT_TEXT = `CONTRATO DE MÚTUO CONVERSÍVEL
+      // --- DATA ---
+
+      // Mock Contract Text for Chunking/Lab
+      const CONTRACT_TEXT = `CONTRATO DE MÚTUO CONVERSÍVEL
 
 CLÁUSULA PRIMEIRA - DO OBJETO
 1.1. Pelo presente instrumento, a MUTUANTE disponibiliza à MUTUÁRIA a quantia de R$ 1.500.000,00 (um milhão e quinhentos mil reais), doravante denominada "Principal".
@@ -484,83 +695,84 @@ CLÁUSULA QUARTA - DAS GARANTIAS
 CLÁUSULA QUINTA - DO INADIMPLEMENTO
 5.1. O atraso superior a 10 dias implicará multa de 10% sobre o saldo devedor.`;
 
-        // --- STATE ---
-        let currentChart = null;
+      // --- STATE ---
+      let currentChart = null;
 
-        // --- UTILS ---
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        }
+      // --- UTILS ---
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        menu.classList.toggle("hidden");
+      }
 
-        function sanitizeHTML(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
+      function sanitizeHTML(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
 
-        function copyCode(button) {
-            const codeBlock = button.parentElement.querySelector('code');
-            navigator.clipboard.writeText(codeBlock.textContent);
-            button.innerHTML = '<i class="fas fa-check mr-1"></i>Copiado!';
-            setTimeout(() => {
-                button.innerHTML = '<i class="fas fa-copy mr-1"></i>Copiar';
-            }, 2000);
-        }
+      function copyCode(button) {
+        const codeBlock = button.parentElement.querySelector("code");
+        navigator.clipboard.writeText(codeBlock.textContent);
+        button.innerHTML = '<i class="fas fa-check mr-1"></i>Copiado!';
+        setTimeout(() => {
+          button.innerHTML = '<i class="fas fa-copy mr-1"></i>Copiar';
+        }, 2000);
+      }
 
-        // --- ROUTER ---
-        function router(view) {
-            // Update Nav
-            document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('active');
-            });
-            const nav = document.getElementById('nav-' + view);
-            if(nav) nav.classList.add('active');
+      // --- ROUTER ---
+      function router(view) {
+        // Update Nav
+        document.querySelectorAll(".nav-item").forEach((el) => {
+          el.classList.remove("active");
+        });
+        const nav = document.getElementById("nav-" + view);
+        if (nav) nav.classList.add("active");
 
-            // Close mobile menu if open
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenu) mobileMenu.classList.add('hidden');
+        // Close mobile menu if open
+        const mobileMenu = document.getElementById("mobile-menu");
+        if (mobileMenu) mobileMenu.classList.add("hidden");
 
-            const app = document.getElementById('app-content');
-            
-            // Fundamentos
-            if (view === 'intro-rag') renderIntroRAG(app);
-            if (view === 'rag-architecture') renderRAGArchitecture(app);
-            if (view === 'rag-vs-finetune') renderRAGvsFinetune(app);
-            
-            // Engenharia de Dados
-            if (view === 'chunking') renderChunking(app);
-            if (view === 'embeddings') renderEmbeddings(app);
-            if (view === 'vector-dbs') renderVectorDBs(app);
-            
-            // RAG Avançado
-            if (view === 'hybrid-search') renderHybridSearch(app);
-            if (view === 'reranking') renderReranking(app);
-            if (view === 'hyde') renderHyDE(app);
-            if (view === 'parent-child') renderParentChild(app);
-            if (view === 'raptor') renderRAPTOR(app);
-            
-            // Agentes
-            if (view === 'react-pattern') renderReActPattern(app);
-            if (view === 'tool-calling') renderToolCalling(app);
-            if (view === 'planning') renderPlanning(app);
-            if (view === 'memory') renderMemory(app);
-            if (view === 'agent-arch') renderAgentArchitectures(app);
-            
-            // Lab
-            if (view === 'lab-overview') renderLabOverview(app);
-            if (view === 'lab-code') renderLabCode(app);
-            if (view === 'lab-exercises') renderLabExercises(app);
+        const app = document.getElementById("app-content");
 
-            // Scroll to top
-            app.scrollTop = 0;
-        }
+        // Fundamentos
+        if (view === "intro-rag") renderIntroRAG(app);
+        if (view === "rag-architecture") renderRAGArchitecture(app);
+        if (view === "rag-vs-finetune") renderRAGvsFinetune(app);
 
-        // --- RENDERERS ---
-        // === FUNDAMENTOS ===
+        // Engenharia de Dados
+        if (view === "chunking") renderChunking(app);
+        if (view === "embeddings") renderEmbeddings(app);
+        if (view === "vector-dbs") renderVectorDBs(app);
 
-        function renderIntroRAG(container) {
-            container.innerHTML = `
+        // RAG Avançado
+        if (view === "hybrid-search") renderHybridSearch(app);
+        if (view === "reranking") renderReranking(app);
+        if (view === "hyde") renderHyDE(app);
+        if (view === "parent-child") renderParentChild(app);
+        if (view === "raptor") renderRAPTOR(app);
+
+        // Agentes
+        if (view === "react-pattern") renderReActPattern(app);
+        if (view === "tool-calling") renderToolCalling(app);
+        if (view === "planning") renderPlanning(app);
+        if (view === "memory") renderMemory(app);
+        if (view === "agent-arch") renderAgentArchitectures(app);
+
+        // Lab
+        if (view === "lab-overview") renderLabOverview(app);
+        if (view === "lab-code") renderLabCode(app);
+        if (view === "lab-exercises") renderLabExercises(app);
+        if (view === "lab-hybrid-search") renderLabHybridSearch(app);
+
+        // Scroll to top
+        app.scrollTop = 0;
+      }
+
+      // --- RENDERERS ---
+      // === FUNDAMENTOS ===
+
+      function renderIntroRAG(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-lightbulb mr-1"></i>Fundamentos</span>
@@ -709,10 +921,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderRAGArchitecture(container) {
-            container.innerHTML = `
+      function renderRAGArchitecture(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-sitemap mr-1"></i>Fundamentos</span>
@@ -864,10 +1076,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderRAGvsFinetune(container) {
-            container.innerHTML = `
+      function renderRAGvsFinetune(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-balance-scale mr-1"></i>Fundamentos</span>
@@ -1055,10 +1267,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderEmbeddings(container) {
-            container.innerHTML = `
+      function renderEmbeddings(container) {
+        container.innerHTML = `
                 <div class="h-full flex flex-col fade-in">
                     <div class="mb-6">
                         <span class="badge badge-blue"><i class="fas fa-project-diagram mr-1"></i>Engenharia de Dados</span>
@@ -1138,11 +1350,11 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-            setTimeout(initVectorChart, 100);
-        }
+        setTimeout(initVectorChart, 100);
+      }
 
-        function renderVectorDBs(container) {
-            container.innerHTML = `
+      function renderVectorDBs(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-blue"><i class="fas fa-cubes mr-1"></i>Engenharia de Dados</span>
@@ -1308,12 +1520,12 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        // === RAG AVANÇADO ===
+      // === RAG AVANÇADO ===
 
-        function renderHybridSearch(container) {
-            container.innerHTML = `
+      function renderHybridSearch(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-rocket mr-1"></i>RAG Avançado</span>
@@ -1416,10 +1628,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderReranking(container) {
-            container.innerHTML = `
+      function renderReranking(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-rocket mr-1"></i>RAG Avançado</span>
@@ -1537,10 +1749,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderHyDE(container) {
-            container.innerHTML = `
+      function renderHyDE(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-rocket mr-1"></i>RAG Avançado</span>
@@ -1664,10 +1876,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderParentChild(container) {
-            container.innerHTML = `
+      function renderParentChild(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-rocket mr-1"></i>RAG Avançado</span>
@@ -1823,10 +2035,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderRAPTOR(container) {
-            container.innerHTML = `
+      function renderRAPTOR(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-gold"><i class="fas fa-rocket mr-1"></i>RAG Avançado</span>
@@ -1871,11 +2083,16 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                                 <div>
                                     <div class="text-xs font-bold text-slate-400 uppercase mb-3">Level 0: Chunks Originais</div>
                                     <div class="grid grid-cols-8 gap-2">
-                                        ${Array(8).fill(0).map((_, i) => `
+                                        ${Array(8)
+                                          .fill(0)
+                                          .map(
+                                            (_, i) => `
                                             <div class="bg-blue-900/30 border border-blue-800/50 rounded p-2 text-center">
-                                                <div class="text-[9px] text-blue-400 font-bold">C${i+1}</div>
+                                                <div class="text-[9px] text-blue-400 font-bold">C${i + 1}</div>
                                             </div>
-                                        `).join('')}
+                                        `,
+                                          )
+                                          .join("")}
                                     </div>
                                 </div>
                                 
@@ -1888,12 +2105,17 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                                 <div>
                                     <div class="text-xs font-bold text-slate-400 uppercase mb-3">Level 1: Sumários Intermediários</div>
                                     <div class="grid grid-cols-4 gap-3">
-                                        ${Array(4).fill(0).map((_, i) => `
+                                        ${Array(4)
+                                          .fill(0)
+                                          .map(
+                                            (_, i) => `
                                             <div class="bg-purple-900/30 border border-purple-800/50 rounded p-3 text-center">
-                                                <div class="text-[10px] text-purple-400 font-bold mb-1">S${i+1}</div>
-                                                <div class="text-[8px] text-slate-400">Resumo de C${i*2+1}-C${i*2+2}</div>
+                                                <div class="text-[10px] text-purple-400 font-bold mb-1">S${i + 1}</div>
+                                                <div class="text-[8px] text-slate-400">Resumo de C${i * 2 + 1}-C${i * 2 + 2}</div>
                                             </div>
-                                        `).join('')}
+                                        `,
+                                          )
+                                          .join("")}
                                     </div>
                                 </div>
                                 
@@ -1993,12 +2215,12 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        // === AGENTES ===
+      // === AGENTES ===
 
-        function renderReActPattern(container) {
-            container.innerHTML = `
+      function renderReActPattern(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-green"><i class="fas fa-robot mr-1"></i>Agentes LangChain</span>
@@ -2184,10 +2406,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderToolCalling(container) {
-            container.innerHTML = `
+      function renderToolCalling(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-green"><i class="fas fa-robot mr-1"></i>Agentes LangChain</span>
@@ -2375,10 +2597,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderPlanning(container) {
-            container.innerHTML = `
+      function renderPlanning(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-green"><i class="fas fa-robot mr-1"></i>Agentes LangChain</span>
@@ -2562,10 +2784,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderMemory(container) {
-            container.innerHTML = `
+      function renderMemory(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-green"><i class="fas fa-robot mr-1"></i>Agentes LangChain</span>
@@ -2751,10 +2973,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderAgentArchitectures(container) {
-            container.innerHTML = `
+      function renderAgentArchitectures(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-green"><i class="fas fa-robot mr-1"></i>Agentes LangChain</span>
@@ -2930,12 +3152,12 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        // === LAB PRÁTICO ===
+      // === LAB PRÁTICO ===
 
-        function renderLabOverview(container) {
-            container.innerHTML = `
+      function renderLabOverview(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-blue"><i class="fas fa-flask mr-1"></i>Lab Prático</span>
@@ -3103,10 +3325,10 @@ CLÁUSULA QUINTA - DO INADIMPLEMENTO
                     </div>
                 </div>
             `;
-        }
+      }
 
-        function renderLabCode(container) {
-            container.innerHTML = `
+      function renderLabCode(container) {
+        container.innerHTML = `
                 <div class="max-w-6xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-blue"><i class="fas fa-code mr-1"></i>Lab Prático</span>
@@ -3355,14 +3577,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")</code></pre>
                     </div>
                 </div>
             `;
-            // Trigger Prism syntax highlighting
-            if (typeof Prism !== 'undefined') {
-                Prism.highlightAll();
-            }
+        // Trigger Prism syntax highlighting
+        if (typeof Prism !== "undefined") {
+          Prism.highlightAll();
         }
+      }
 
-        function renderLabExercises(container) {
-            container.innerHTML = `
+      function renderLabExercises(container) {
+        container.innerHTML = `
                 <div class="max-w-5xl mx-auto fade-in">
                     <div class="mb-10">
                         <span class="badge badge-blue"><i class="fas fa-clipboard-check mr-1"></i>Lab Prático</span>
@@ -3375,290 +3597,974 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")</code></pre>
                     </div>
                 </div>
             `;
-            
-            // Exercises data
-            const exercises = [
-                {
-                    id: 'ex1',
-                    level: 'Básico',
-                    levelColor: 'green',
-                    title: 'Setup do Ambiente',
-                    description: 'Configure o ambiente Python com as dependências necessárias.',
-                    tasks: [
-                        'Criar virtualenv: <code>python -m venv venv</code>',
-                        'Ativar ambiente: <code>source venv/bin/activate</code> (Linux/Mac) ou <code>venv\\\\Scripts\\\\activate</code> (Windows)',
-                        'Instalar dependências: <code>pip install langchain chromadb openai pypdf2 python-dotenv</code>',
-                        'Criar arquivo .env com sua OPENAI_API_KEY',
-                        'Testar import: <code>python -c "import langchain; print(langchain.__version__)"</code>'
-                    ]
-                },
-                {
-                    id: 'ex2',
-                    level: 'Básico',
-                    levelColor: 'green',
-                    title: 'Ingestão de Documento',
-                    description: 'Implemente a função de ingestão de PDFs no ChromaDB.',
-                    tasks: [
-                        'Baixar um contrato PDF de exemplo',
-                        'Implementar função <code>ingest_contract()</code>',
-                        'Testar diferentes chunk_sizes (256, 512, 1024)',
-                        'Verificar quantos chunks foram gerados',
-                        'Inspecionar o ChromaDB: <code>ls -la ./chroma_db</code>'
-                    ]
-                },
-                {
-                    id: 'ex3',
-                    level: 'Intermediário',
-                    levelColor: 'blue',
-                    title: 'Tool Customizada',
-                    description: 'Crie uma nova tool para calcular o custo total do contrato.',
-                    tasks: [
-                        'Criar função <code>calculate_total_cost()</code>',
-                        'Tool deve buscar: valor principal, taxa de juros, prazo',
-                        'Calcular montante final com juros compostos',
-                        'Retornar: <code>{"total": valor, "juros_pagos": juros}</code>',
-                        'Adicionar tool à lista de tools do agente'
-                    ]
-                },
-                {
-                    id: 'ex4',
-                    level: 'Intermediário',
-                    levelColor: 'blue',
-                    title: 'Validação com Pydantic',
-                    description: 'Estenda o schema ContractMetadata com novos campos.',
-                    tasks: [
-                        'Adicionar campo <code>multa_atraso: float</code>',
-                        'Adicionar campo <code>correcao_monetaria: str</code>',
-                        'Adicionar validador: taxa_juros deve ser entre 0.1% e 5%',
-                        'Adicionar validador: prazo_meses deve ser múltiplo de 6',
-                        'Testar com dados inválidos e capturar ValidationError'
-                    ]
-                },
-                {
-                    id: 'ex5',
-                    level: 'Avançado',
-                    levelColor: 'orange',
-                    title: 'Hybrid Search',
-                    description: 'Implemente busca híbrida (dense + sparse) para melhorar retrieval.',
-                    tasks: [
-                        'Instalar: <code>pip install rank-bm25</code>',
-                        'Implementar BM25 retriever para busca keyword',
-                        'Combinar resultados: 70% embedding + 30% BM25',
-                        'Criar função <code>hybrid_search(query, k=5)</code>',
-                        'Comparar resultados com busca puramente vetorial'
-                    ]
-                },
-                {
-                    id: 'ex6',
-                    level: 'Avançado',
-                    levelColor: 'orange',
-                    title: 'Memory com ConversationBufferMemory',
-                    description: 'Adicione memória conversacional ao agente.',
-                    tasks: [
-                        'Importar: <code>from langchain.memory import ConversationBufferMemory</code>',
-                        'Configurar memory no AgentExecutor',
-                        'Fazer 3 perguntas sequenciais sobre o mesmo contrato',
-                        'Verificar se agente lembra contexto anterior',
-                        'Limpar memória: <code>memory.clear()</code>'
-                    ]
-                },
-                {
-                    id: 'ex7',
-                    level: 'Avançado',
-                    levelColor: 'orange',
-                    title: 'Multi-Document RAG',
-                    description: 'Indexe múltiplos contratos e implemente busca cross-document.',
-                    tasks: [
-                        'Ingerir 3 contratos diferentes no mesmo collection',
-                        'Adicionar metadata: <code>{"contract_id": "C001", "year": 2024}</code>',
-                        'Implementar filtro: buscar apenas contratos de 2024',
-                        'Criar query: "Compare garantias entre todos os contratos"',
-                        'Agent deve chamar search_contract múltiplas vezes'
-                    ]
-                },
-                {
-                    id: 'ex8',
-                    level: 'Expert',
-                    levelColor: 'red',
-                    title: 'Plan-and-Execute Agent',
-                    description: 'Substitua ReAct por Plan-and-Execute para tarefas complexas.',
-                    tasks: [
-                        'Importar: <code>from langchain.agents import create_plan_and_execute_agent</code>',
-                        'Criar Planner LLM (gpt-4) e Executor LLM (gpt-3.5-turbo)',
-                        'Task: "Analise todos os contratos e crie relatório comparativo"',
-                        'Agent deve gerar plano com 5+ steps',
-                        'Comparar custo e latência vs ReAct'
-                    ]
-                }
-            ];
 
-            const exercisesContainer = container.querySelector('#exercises-container');
-            exercises.forEach(ex => {
-                const savedNotes = localStorage.getItem('exercise-' + ex.id) || '';
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                // Build tasks HTML
-                const tasksHTML = ex.tasks.map((task, i) => {
-                    return '<li class="flex items-start gap-2">' +
-                        '<input type="checkbox" class="mt-1" id="' + ex.id + '-task-' + i + '" ' +
-                        'onchange="saveTaskState(\'' + ex.id + '\', ' + i + ', this.checked)">' +
-                        '<label for="' + ex.id + '-task-' + i + '">' + task + '</label>' +
-                        '</li>';
-                }).join('');
-                
-                card.innerHTML = 
-                    '<div class="flex justify-between items-start mb-4">' +
-                        '<div>' +
-                            '<span class="badge badge-' + ex.levelColor + ' mr-2">' + ex.level + '</span>' +
-                            '<h3 class="text-lg font-bold text-white inline">' + ex.title + '</h3>' +
-                        '</div>' +
-                        '<button onclick="toggleExercise(\'' + ex.id + '\')" class="text-slate-400 hover:text-white transition">' +
-                            '<i class="fas fa-chevron-down" id="icon-' + ex.id + '"></i>' +
-                        '</button>' +
-                    '</div>' +
-                    '<p class="text-sm text-slate-400 mb-4">' + ex.description + '</p>' +
-                    '<div id="content-' + ex.id + '" class="hidden">' +
-                        '<div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700 mb-4">' +
-                            '<h4 class="text-xs font-bold text-slate-300 uppercase mb-3">' +
-                                '<i class="fas fa-tasks mr-2"></i>Tarefas:' +
-                            '</h4>' +
-                            '<ul class="space-y-2 text-sm text-slate-300">' +
-                                tasksHTML +
-                            '</ul>' +
-                        '</div>' +
-                        '<div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">' +
-                            '<h4 class="text-xs font-bold text-slate-300 uppercase mb-2">' +
-                                '<i class="fas fa-sticky-note mr-2 gold-accent"></i>Suas Anotações:' +
-                            '</h4>' +
-                            '<textarea ' +
-                                'id="notes-' + ex.id + '" ' +
-                                'class="w-full bg-slate-800 border border-slate-600 rounded p-3 text-xs text-white font-mono focus:border-gold-accent outline-none transition resize-vertical" ' +
-                                'rows="4" ' +
-                                'placeholder="Anote seu código, dúvidas ou observações aqui..." ' +
-                                'onchange="saveNotes(\'' + ex.id + '\', this.value)">' + savedNotes + '</textarea>' +
-                            '<div class="text-[10px] text-slate-500 mt-2">' +
-                                '<i class="fas fa-save mr-1"></i>Salvo automaticamente no navegador' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>';
-                
-                exercisesContainer.appendChild(card);
-                
-                // Restaurar estado dos checkboxes
-                ex.tasks.forEach((_, i) => {
-                    const saved = localStorage.getItem(ex.id + '-task-' + i);
-                    if (saved === 'true') {
-                        const checkbox = document.getElementById(ex.id + '-task-' + i);
-                        if (checkbox) checkbox.checked = true;
-                    }
-                });
-            });
-        }
+        // Exercises data
+        const exercises = [
+          {
+            id: "ex1",
+            level: "Básico",
+            levelColor: "green",
+            title: "Setup do Ambiente",
+            description:
+              "Configure o ambiente Python com as dependências necessárias.",
+            tasks: [
+              "Criar virtualenv: <code>python -m venv venv</code>",
+              "Ativar ambiente: <code>source venv/bin/activate</code> (Linux/Mac) ou <code>venv\\\\Scripts\\\\activate</code> (Windows)",
+              "Instalar dependências: <code>pip install langchain chromadb openai pypdf2 python-dotenv</code>",
+              "Criar arquivo .env com sua OPENAI_API_KEY",
+              'Testar import: <code>python -c "import langchain; print(langchain.__version__)"</code>',
+            ],
+          },
+          {
+            id: "ex2",
+            level: "Básico",
+            levelColor: "green",
+            title: "Ingestão de Documento",
+            description: "Implemente a função de ingestão de PDFs no ChromaDB.",
+            tasks: [
+              "Baixar um contrato PDF de exemplo",
+              "Implementar função <code>ingest_contract()</code>",
+              "Testar diferentes chunk_sizes (256, 512, 1024)",
+              "Verificar quantos chunks foram gerados",
+              "Inspecionar o ChromaDB: <code>ls -la ./chroma_db</code>",
+            ],
+          },
+          {
+            id: "ex3",
+            level: "Intermediário",
+            levelColor: "blue",
+            title: "Tool Customizada",
+            description:
+              "Crie uma nova tool para calcular o custo total do contrato.",
+            tasks: [
+              "Criar função <code>calculate_total_cost()</code>",
+              "Tool deve buscar: valor principal, taxa de juros, prazo",
+              "Calcular montante final com juros compostos",
+              'Retornar: <code>{"total": valor, "juros_pagos": juros}</code>',
+              "Adicionar tool à lista de tools do agente",
+            ],
+          },
+          {
+            id: "ex4",
+            level: "Intermediário",
+            levelColor: "blue",
+            title: "Validação com Pydantic",
+            description: "Estenda o schema ContractMetadata com novos campos.",
+            tasks: [
+              "Adicionar campo <code>multa_atraso: float</code>",
+              "Adicionar campo <code>correcao_monetaria: str</code>",
+              "Adicionar validador: taxa_juros deve ser entre 0.1% e 5%",
+              "Adicionar validador: prazo_meses deve ser múltiplo de 6",
+              "Testar com dados inválidos e capturar ValidationError",
+            ],
+          },
+          {
+            id: "ex5",
+            level: "Avançado",
+            levelColor: "orange",
+            title: "Hybrid Search",
+            description:
+              "Implemente busca híbrida (dense + sparse) para melhorar retrieval.",
+            tasks: [
+              "Instalar: <code>pip install rank-bm25</code>",
+              "Implementar BM25 retriever para busca keyword",
+              "Combinar resultados: 70% embedding + 30% BM25",
+              "Criar função <code>hybrid_search(query, k=5)</code>",
+              "Comparar resultados com busca puramente vetorial",
+            ],
+          },
+          {
+            id: "ex6",
+            level: "Avançado",
+            levelColor: "orange",
+            title: "Memory com ConversationBufferMemory",
+            description: "Adicione memória conversacional ao agente.",
+            tasks: [
+              "Importar: <code>from langchain.memory import ConversationBufferMemory</code>",
+              "Configurar memory no AgentExecutor",
+              "Fazer 3 perguntas sequenciais sobre o mesmo contrato",
+              "Verificar se agente lembra contexto anterior",
+              "Limpar memória: <code>memory.clear()</code>",
+            ],
+          },
+          {
+            id: "ex7",
+            level: "Avançado",
+            levelColor: "orange",
+            title: "Multi-Document RAG",
+            description:
+              "Indexe múltiplos contratos e implemente busca cross-document.",
+            tasks: [
+              "Ingerir 3 contratos diferentes no mesmo collection",
+              'Adicionar metadata: <code>{"contract_id": "C001", "year": 2024}</code>',
+              "Implementar filtro: buscar apenas contratos de 2024",
+              'Criar query: "Compare garantias entre todos os contratos"',
+              "Agent deve chamar search_contract múltiplas vezes",
+            ],
+          },
+          {
+            id: "ex8",
+            level: "Expert",
+            levelColor: "red",
+            title: "Plan-and-Execute Agent",
+            description:
+              "Substitua ReAct por Plan-and-Execute para tarefas complexas.",
+            tasks: [
+              "Importar: <code>from langchain.agents import create_plan_and_execute_agent</code>",
+              "Criar Planner LLM (gpt-4) e Executor LLM (gpt-3.5-turbo)",
+              'Task: "Analise todos os contratos e crie relatório comparativo"',
+              "Agent deve gerar plano com 5+ steps",
+              "Comparar custo e latência vs ReAct",
+            ],
+          },
+        ];
 
-        // Exercise helpers
-        function toggleExercise(id) {
-            const content = document.getElementById('content-' + id);
-            const icon = document.getElementById('icon-' + id);
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            } else {
-                content.classList.add('hidden');
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
+        const exercisesContainer = container.querySelector(
+          "#exercises-container",
+        );
+        exercises.forEach((ex) => {
+          const savedNotes = localStorage.getItem("exercise-" + ex.id) || "";
+          const card = document.createElement("div");
+          card.className = "card";
+
+          // Build tasks HTML
+          const tasksHTML = ex.tasks
+            .map((task, i) => {
+              return (
+                '<li class="flex items-start gap-2">' +
+                '<input type="checkbox" class="mt-1" id="' +
+                ex.id +
+                "-task-" +
+                i +
+                '" ' +
+                "onchange=\"saveTaskState('" +
+                ex.id +
+                "', " +
+                i +
+                ', this.checked)">' +
+                '<label for="' +
+                ex.id +
+                "-task-" +
+                i +
+                '">' +
+                task +
+                "</label>" +
+                "</li>"
+              );
+            })
+            .join("");
+
+          card.innerHTML =
+            '<div class="flex justify-between items-start mb-4">' +
+            "<div>" +
+            '<span class="badge badge-' +
+            ex.levelColor +
+            ' mr-2">' +
+            ex.level +
+            "</span>" +
+            '<h3 class="text-lg font-bold text-white inline">' +
+            ex.title +
+            "</h3>" +
+            "</div>" +
+            "<button onclick=\"toggleExercise('" +
+            ex.id +
+            '\')" class="text-slate-400 hover:text-white transition">' +
+            '<i class="fas fa-chevron-down" id="icon-' +
+            ex.id +
+            '"></i>' +
+            "</button>" +
+            "</div>" +
+            '<p class="text-sm text-slate-400 mb-4">' +
+            ex.description +
+            "</p>" +
+            '<div id="content-' +
+            ex.id +
+            '" class="hidden">' +
+            '<div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700 mb-4">' +
+            '<h4 class="text-xs font-bold text-slate-300 uppercase mb-3">' +
+            '<i class="fas fa-tasks mr-2"></i>Tarefas:' +
+            "</h4>" +
+            '<ul class="space-y-2 text-sm text-slate-300">' +
+            tasksHTML +
+            "</ul>" +
+            "</div>" +
+            '<div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">' +
+            '<h4 class="text-xs font-bold text-slate-300 uppercase mb-2">' +
+            '<i class="fas fa-sticky-note mr-2 gold-accent"></i>Suas Anotações:' +
+            "</h4>" +
+            "<textarea " +
+            'id="notes-' +
+            ex.id +
+            '" ' +
+            'class="w-full bg-slate-800 border border-slate-600 rounded p-3 text-xs text-white font-mono focus:border-gold-accent outline-none transition resize-vertical" ' +
+            'rows="4" ' +
+            'placeholder="Anote seu código, dúvidas ou observações aqui..." ' +
+            "onchange=\"saveNotes('" +
+            ex.id +
+            "', this.value)\">" +
+            savedNotes +
+            "</textarea>" +
+            '<div class="text-[10px] text-slate-500 mt-2">' +
+            '<i class="fas fa-save mr-1"></i>Salvo automaticamente no navegador' +
+            "</div>" +
+            "</div>" +
+            "</div>";
+
+          exercisesContainer.appendChild(card);
+
+          // Restaurar estado dos checkboxes
+          ex.tasks.forEach((_, i) => {
+            const saved = localStorage.getItem(ex.id + "-task-" + i);
+            if (saved === "true") {
+              const checkbox = document.getElementById(ex.id + "-task-" + i);
+              if (checkbox) checkbox.checked = true;
             }
-        }
+          });
+        });
+      }
 
-        function saveNotes(exerciseId, value) {
-            localStorage.setItem('exercise-' + exerciseId, value);
-        }
+      // === LAB: HYBRID SEARCH ===
+      function renderLabHybridSearch(container) {
+        container.innerHTML = `
+                <div class="max-w-6xl mx-auto fade-in">
+                    <div class="mb-10">
+                        <span class="badge badge-gold"><i class="fas fa-search-dollar mr-1"></i>Lab Prático</span>
+                        <h1 class="text-4xl font-bold text-white mt-4 mb-2">Lab: Hybrid Search</h1>
+                        <p class="text-slate-400 text-lg">Construa o arquivo <code class="bg-slate-800 px-2 py-1 rounded">exemplo_hybrid_search.py</code> passo a passo.</p>
+                    </div>
 
-        function saveTaskState(exerciseId, taskIndex, checked) {
-            localStorage.setItem(exerciseId + '-task-' + taskIndex, checked);
-        }
+                    <!-- Intro -->
+                    <div class="card mb-8 border-l-4 border-l-yellow-500">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-lightbulb text-yellow-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-white mb-2">Objetivo do Lab</h3>
+                                <p class="text-slate-300 text-sm mb-3">
+                                    Neste laboratório, você vai criar um arquivo Python que demonstra três formas de busca:
+                                </p>
+                                <ul class="text-slate-400 text-sm space-y-1">
+                                    <li><i class="fas fa-check text-green-400 mr-2"></i><strong>BM25 Isolado:</strong> Busca por palavras-chave (sem API externa)</li>
+                                    <li><i class="fas fa-check text-blue-400 mr-2"></i><strong>Hybrid Search:</strong> Combina BM25 + busca semântica com RRF</li>
+                                    <li><i class="fas fa-check text-purple-400 mr-2"></i><strong>Comparação:</strong> Mostra as diferenças entre os métodos</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
 
-        function initVectorChart() {
-            const ctx = document.getElementById('vectorChart').getContext('2d');
+                    <!-- Bloco 1: Header e Imports -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm mr-3">1</span>
+                                Header e Imports Básicos
+                            </h3>
+                            <span class="badge badge-blue">Linhas 1-19</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Crie o arquivo <code class="bg-slate-800 px-1 rounded">exemplo_hybrid_search.py</code> na raiz do projeto e adicione:
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">"""
+Exemplo de uso do Hybrid Search
+Auditor de Contratos - Bootcamp Itaú FIAP 2026
+
+Demonstra:
+1. BM25 isolado (sem API externa)
+2. HybridSearchAdapter completo (requer OpenAI)
+"""
+
+import os
+import sys
+from dotenv import load_dotenv
+from langchain.schema import Document
+
+# Carrega variáveis de ambiente (override=True sobrescreve vars do sistema)
+load_dotenv(override=True)
+
+# Imports do projeto
+from adapters.hybrid_search import BM25, HybridSearchAdapter, SearchResult</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-blue-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Docstring:</strong> Documenta o propósito do arquivo e o que será demonstrado</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>load_dotenv(override=True):</strong> Carrega variáveis do <code>.env</code> e sobrescreve variáveis de ambiente do sistema</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Document:</strong> Classe do LangChain que encapsula texto + metadados</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>BM25, HybridSearchAdapter:</strong> Componentes do nosso projeto para busca</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 2: Função BM25 - Documentos -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-600 text-white text-sm mr-3">2</span>
+                                Função BM25 - Documentos de Exemplo
+                            </h3>
+                            <span class="badge badge-green">Linhas 22-45</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Inicie a função que demonstra o BM25 isoladamente (não precisa de API key):
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">def exemplo_bm25_isolado():
+    """
+    Exemplo 1: Usar BM25 isoladamente (sem OpenAI).
+    
+    Este exemplo NÃO precisa de API key - usa apenas o algoritmo BM25
+    para busca por palavras-chave.
+    """
+    print("=" * 60)
+    print("EXEMPLO 1: BM25 Isolado (sem API externa)")
+    print("=" * 60)
+    
+    # Documentos de exemplo (simulando chunks de um contrato)
+    docs = [
+        Document(page_content="Contrato de mútuo com taxa de juros de 5% ao ano. "
+                              "O mutuário compromete-se a pagar em parcelas mensais."),
+        Document(page_content="Garantia hipotecária sobre imóvel residencial localizado "
+                              "na Rua das Flores, 123, São Paulo/SP."),
+        Document(page_content="Prazo de 36 meses com parcelas mensais fixas. "
+                              "O vencimento ocorre todo dia 10 de cada mês."),
+        Document(page_content="Cláusula penal prevê multa de 2% sobre valor devido "
+                              "em caso de atraso no pagamento das parcelas."),
+        Document(page_content="O mutuário declara ter recebido o valor de R$ 100.000,00 "
+                              "(cem mil reais) na data de assinatura deste contrato."),
+    ]</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-green-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Document(page_content=...):</strong> Cria objetos Document do LangChain simulando chunks de contrato</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>5 documentos:</strong> Cada um representa um aspecto diferente do contrato (juros, garantia, prazo, multa, valor)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Sem API:</strong> Este exemplo roda 100% local, sem precisar de OpenAI</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 3: BM25 - Treinamento -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-600 text-white text-sm mr-3">3</span>
+                                BM25 - Indexação e Estatísticas
+                            </h3>
+                            <span class="badge badge-green">Linhas 47-54</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Adicione a criação e treinamento do BM25 (ainda dentro da função):
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">    # Criar e treinar BM25
+    print("\\n📚 Indexando documentos...")
+    bm25 = BM25(k1=1.5, b=0.75)
+    bm25.fit(docs)
+    
+    print(f"   ✓ Corpus indexado: {bm25.corpus_size} documentos")
+    print(f"   ✓ Vocabulário: {len(bm25.doc_freqs)} termos únicos")
+    print(f"   ✓ Tamanho médio: {bm25.avg_doc_length:.1f} tokens/documento")</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-green-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>k1=1.5:</strong> Parâmetro de saturação de frequência de termo (valores típicos: 1.2-2.0)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>b=0.75:</strong> Parâmetro de normalização por tamanho de documento (0=sem normalização, 1=normalização total)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>fit():</strong> Indexa os documentos, criando o vocabulário e calculando estatísticas</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>doc_freqs:</strong> Dicionário com frequência de cada termo no corpus</li>
+                            </ul>
+                        </div>
+                        <div class="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+                            <p class="text-xs text-yellow-200"><i class="fas fa-lightbulb mr-2"></i><strong>Dica:</strong> O BM25 é o algoritmo por trás de motores de busca tradicionais como Elasticsearch e Lucene.</p>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 4: BM25 - Buscas -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-600 text-white text-sm mr-3">4</span>
+                                BM25 - Executando Buscas
+                            </h3>
+                            <span class="badge badge-green">Linhas 56-83</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Complete a função com as buscas e fechamento:
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">    # Executar buscas
+    queries = [
+        "taxa de juros",
+        "garantia imóvel hipoteca",
+        "multa atraso pagamento",
+        "valor recebido reais",
+    ]
+    
+    print("\\n🔍 Executando buscas BM25:")
+    print("-" * 60)
+    
+    for query in queries:
+        print(f"\\n📝 Query: '{query}'")
+        results = bm25.search(query, k=2)
+        
+        if not results:
+            print("   Nenhum resultado encontrado.")
+            continue
             
-            // Mock Data Clusters
-            // Finance Cluster
-            const finance = [
-                { x: 0.8, y: 0.8, label: 'Dinheiro' }, { x: 0.85, y: 0.75, label: 'Banco' },
-                { x: 0.9, y: 0.82, label: 'Lucro' }, { x: 0.75, y: 0.85, label: 'Ações' },
-                { x: 0.82, y: 0.9, label: 'Dólar' }
-            ];
+        for rank, (idx, score) in enumerate(results, 1):
+            content = docs[idx].page_content
+            # Truncar para exibição
+            preview = content[:80] + "..." if len(content) > 80 else content
+            print(f"   {rank}. [Score: {score:.4f}] {preview}")
+    
+    print("\\n" + "=" * 60)
+    print("✅ Exemplo BM25 concluído!")
+    print("=" * 60)</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-green-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>search(query, k=2):</strong> Retorna os k documentos mais relevantes para a query</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Retorno:</strong> Lista de tuplas (índice_documento, score_bm25)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Score BM25:</strong> Quanto maior, mais relevante o documento para a query</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Truncamento:</strong> Preview de 80 caracteres para exibição legível</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 5: Hybrid Search Completo -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm mr-3">5</span>
+                                Função Hybrid Search Completo
+                            </h3>
+                            <span class="badge badge-blue">Linhas 86-191</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Adicione a função que combina BM25 + busca semântica (requer OPENAI_API_KEY):
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">def exemplo_hybrid_search_completo():
+    """
+    Exemplo 2: HybridSearchAdapter completo (requer OpenAI).
+    
+    Combina BM25 (keyword) + busca semântica (embeddings) usando
+    Reciprocal Rank Fusion (RRF) para melhor ranking.
+    """
+    print("\\n" + "=" * 60)
+    print("EXEMPLO 2: Hybrid Search Completo")
+    print("=" * 60)
+    
+    # Verificar API key
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("\\n❌ OPENAI_API_KEY não configurada!")
+        print("   Configure a variável de ambiente e tente novamente.")
+        print("   Exemplo: export OPENAI_API_KEY='sua-chave-aqui'")
+        return
+    
+    # Debug: mostrar qual key está sendo usada (mascarada)
+    print(f"\\n🔑 API Key carregada: {api_key[:8]}...{api_key[-4:]}")
+    
+    # Imports que dependem de config
+    from adapters.openai_adapter import OpenAIAdapter
+    from adapters.chromadb_adapter import ChromaDBAdapter
+    from adapters.document_loader import DocumentLoader
+    from core.config import Config
+    
+    try:
+        # Carregar configuração
+        print("\\n⚙️  Carregando configuração...")
+        config = Config.from_env()
+        
+        # Inicializar OpenAI adapter
+        print("🔧 Inicializando OpenAI adapter...")
+        openai_adapter = OpenAIAdapter(
+            api_key=config.openai_api_key,
+            embedding_model=config.embedding_model
+        )
+        
+        # Inicializar ChromaDB adapter
+        print("🔧 Inicializando ChromaDB adapter...")
+        chromadb_adapter = ChromaDBAdapter(
+            embeddings=openai_adapter.embeddings,
+            collection_name="hybrid_search_demo",
+            persist_directory="./chroma_demo"
+        )
+        
+        # Carregar documento
+        contract_path = "v1/contrato_mutuo_exemplo.txt"
+        if not os.path.exists(contract_path):
+            print(f"\\n❌ Arquivo não encontrado: {contract_path}")
+            return
+        
+        print(f"📄 Processando documento: {contract_path}")
+        loader = DocumentLoader(chunk_size=500, chunk_overlap=50)
+        chunks = loader.process_document(contract_path)
+        print(f"   ✓ {len(chunks)} chunks criados")
+        
+        # Criar vectorstore
+        print("📊 Criando vectorstore...")
+        chromadb_adapter.create_from_documents(chunks)
+        
+        # Criar HybridSearchAdapter
+        print("🔀 Inicializando Hybrid Search...")
+        hybrid = HybridSearchAdapter(
+            chromadb_adapter=chromadb_adapter,
+            alpha=0.5,  # 50% semântico, 50% BM25
+            rrf_k=60
+        )
+        hybrid.index_documents(chunks)
+        print("   ✓ Hybrid Search pronto!")</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-blue-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Config.from_env():</strong> Carrega configurações do arquivo .env</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>OpenAIAdapter:</strong> Encapsula chamadas à API da OpenAI (embeddings e chat)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>ChromaDBAdapter:</strong> Interface com o banco vetorial ChromaDB</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>alpha=0.5:</strong> Peso entre busca semântica e BM25 (0.5 = 50%/50%)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>rrf_k=60:</strong> Parâmetro do Reciprocal Rank Fusion (valor padrão comum)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Bloco 5 continuação: Buscas Híbridas -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm mr-3">5b</span>
+                                Hybrid Search - Executando Buscas
+                            </h3>
+                            <span class="badge badge-blue">Continuação</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Continue a função com as buscas híbridas (ainda dentro do try):
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">        # Executar buscas
+        queries = [
+            "qual a taxa de juros do contrato?",
+            "informações sobre a garantia",
+            "prazo e valor das parcelas",
+        ]
+        
+        print("\\n🔍 Executando buscas híbridas:")
+        print("-" * 60)
+        
+        for query in queries:
+            print(f"\\n📝 Query: '{query}'")
+            results = hybrid.search(query, k=3)
             
-            // Legal Cluster
-            const legal = [
-                { x: 0.2, y: 0.8, label: 'Contrato' }, { x: 0.25, y: 0.85, label: 'Lei' },
-                { x: 0.15, y: 0.75, label: 'Juiz' }, { x: 0.3, y: 0.82, label: 'Advogado' }
-            ];
+            for r in results:
+                content = r.document.page_content
+                preview = content[:100] + "..." if len(content) > 100 else content
+                
+                print(f"\\n   Rank {r.rank}:")
+                print(f"   ├─ Score combinado: {r.combined_score:.4f}")
+                print(f"   ├─ Score semântico: {r.semantic_score:.4f}")
+                print(f"   ├─ Score keyword:   {r.keyword_score:.4f}")
+                print(f"   └─ Conteúdo: {preview}")
+        
+        print("\\n" + "=" * 60)
+        print("✅ Exemplo Hybrid Search concluído!")
+        print("=" * 60)
+        
+    except Exception as e:
+        print(f"\\n❌ Erro: {e}")
+        import traceback
+        traceback.print_exc()</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-blue-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>hybrid.search():</strong> Retorna objetos SearchResult com múltiplos scores</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>combined_score:</strong> Score final após fusão RRF</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>semantic_score:</strong> Score da busca vetorial (similaridade de embeddings)</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>keyword_score:</strong> Score do BM25 (match de palavras)</li>
+                            </ul>
+                        </div>
+                        <div class="mt-3 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                            <p class="text-xs text-blue-200"><i class="fas fa-info-circle mr-2"></i><strong>RRF (Reciprocal Rank Fusion):</strong> Combina rankings de diferentes métodos usando a fórmula: score = 1/(k + rank). Isso dá mais peso a resultados bem rankeados em ambos os métodos.</p>
+                        </div>
+                    </div>
 
-            // Fruit Cluster (Ambiguity Test)
-            const fruit = [
-                { x: 0.5, y: 0.2, label: 'Maçã' }, { x: 0.55, y: 0.25, label: 'Banana' },
-                { x: 0.45, y: 0.15, label: 'Uva' }
-            ];
+                    <!-- Bloco 6: Comparação BM25 vs Semântico -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm mr-3">6</span>
+                                Função Comparação BM25 vs Semântico
+                            </h3>
+                            <span class="badge badge-purple">Linhas 193-259</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Adicione a função que compara os dois métodos lado a lado:
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">def comparar_bm25_vs_semantico():
+    """
+    Exemplo 3: Comparar resultados BM25 vs Semântico.
+    
+    Mostra as diferenças entre busca por palavras-chave e busca semântica.
+    """
+    print("\\n" + "=" * 60)
+    print("EXEMPLO 3: Comparação BM25 vs Semântico")
+    print("=" * 60)
+    
+    if not os.getenv("OPENAI_API_KEY"):
+        print("\\n❌ OPENAI_API_KEY não configurada!")
+        return
+    
+    from adapters.openai_adapter import OpenAIAdapter
+    from adapters.chromadb_adapter import ChromaDBAdapter
+    from core.config import Config
+    
+    # Documentos com sinônimos e variações
+    docs = [
+        Document(page_content="O empréstimo tem taxa de juros de 1.5% ao mês."),
+        Document(page_content="Os custos financeiros são de 18% ao ano."),  # Sinônimo
+        Document(page_content="A garantia é um apartamento de 3 quartos."),
+        Document(page_content="O imóvel dado em hipoteca está na Av. Paulista."),  # Relacionado
+        Document(page_content="Prazo de pagamento: 48 parcelas mensais."),
+    ]
+    
+    try:
+        config = Config.from_env()
+        
+        openai_adapter = OpenAIAdapter(
+            api_key=config.openai_api_key,
+            embedding_model=config.embedding_model
+        )
+        
+        chromadb_adapter = ChromaDBAdapter(
+            embeddings=openai_adapter.embeddings,
+            collection_name="comparacao_demo"
+        )
+        chromadb_adapter.create_from_documents(docs)
+        
+        # BM25
+        bm25 = BM25()
+        bm25.fit(docs)
+        
+        query = "juros do financiamento"
+        print(f"\\n📝 Query: '{query}'")
+        
+        # Resultado BM25
+        print("\\n🔤 Resultados BM25 (palavras-chave):")
+        bm25_results = bm25.search(query, k=3)
+        for rank, (idx, score) in enumerate(bm25_results, 1):
+            print(f"   {rank}. [Score: {score:.4f}] {docs[idx].page_content}")
+        
+        # Resultado Semântico
+        print("\\n🧠 Resultados Semânticos (significado):")
+        sem_results = chromadb_adapter.search_with_score(query, k=3)
+        for rank, (doc, score) in enumerate(sem_results, 1):
+            print(f"   {rank}. [Dist: {score:.4f}] {doc.page_content}")
+        
+        print("\\n💡 Observação:")
+        print("   - BM25 encontra matches exatos de palavras")
+        print("   - Semântico encontra sinônimos e conceitos relacionados")
+        print("   - Hybrid Search combina o melhor dos dois!")
+        
+    except Exception as e:
+        print(f"\\n❌ Erro: {e}")</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-purple-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Documentos com sinônimos:</strong> "taxa de juros" vs "custos financeiros" - mesmo conceito, palavras diferentes</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Query "juros do financiamento":</strong> Não contém exatamente as palavras dos documentos</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>BM25:</strong> Vai encontrar apenas documentos com a palavra "juros"</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Semântico:</strong> Pode encontrar "custos financeiros" por similaridade de significado</li>
+                            </ul>
+                        </div>
+                        <div class="mt-3 p-3 bg-purple-900/20 border border-purple-700/50 rounded-lg">
+                            <p class="text-xs text-purple-200"><i class="fas fa-star mr-2"></i><strong>Insight:</strong> Este é o poder do Hybrid Search - combina precisão lexical (BM25) com compreensão semântica (embeddings).</p>
+                        </div>
+                    </div>
 
-            // Tech Cluster (Ambiguity Test)
-            const tech = [
-                { x: 0.8, y: 0.2, label: 'Apple' }, { x: 0.85, y: 0.15, label: 'Microsoft' },
-                { x: 0.9, y: 0.25, label: 'Python' }
-            ];
+                    <!-- Bloco 7: Main e Menu -->
+                    <div class="card mb-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-600 text-white text-sm mr-3">7</span>
+                                Menu Principal e Execução
+                            </h3>
+                            <span class="badge badge-orange">Linhas 262-294</span>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-4">
+                            Finalize o arquivo com o bloco de execução principal:
+                        </p>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-python"><code class="language-python">if __name__ == "__main__":
+    print("""
+╔══════════════════════════════════════════════════════════════════════╗
+║         DEMONSTRAÇÃO DO HYBRID SEARCH                                ║
+║         Auditor de Contratos - Bootcamp FIAP 2026                    ║
+╚══════════════════════════════════════════════════════════════════════╝
+    """)
+    
+    print("Escolha um exemplo para executar:\\n")
+    print("1. BM25 Isolado (NÃO precisa de API key)")
+    print("2. Hybrid Search Completo (precisa de OPENAI_API_KEY)")
+    print("3. Comparação BM25 vs Semântico (precisa de OPENAI_API_KEY)")
+    print("0. Executar TODOS os exemplos")
+    
+    choice = input("\\nDigite o número do exemplo (ou Enter para sair): ").strip()
+    
+    if choice == "1":
+        exemplo_bm25_isolado()
+    elif choice == "2":
+        exemplo_hybrid_search_completo()
+    elif choice == "3":
+        comparar_bm25_vs_semantico()
+    elif choice == "0":
+        exemplo_bm25_isolado()
+        exemplo_hybrid_search_completo()
+        comparar_bm25_vs_semantico()
+    else:
+        print("Saindo...")
+    
+    print("\\n" + "=" * 60)
+    print("🎉 Demonstração finalizada!")
+    print("=" * 60)</code></pre>
+                        </div>
+                        <div class="mt-4 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-white mb-2"><i class="fas fa-info-circle mr-2 text-orange-400"></i>Explicação</h4>
+                            <ul class="text-slate-400 text-xs space-y-2">
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>if __name__ == "__main__":</strong> Garante que o código só executa quando o arquivo é rodado diretamente</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Menu interativo:</strong> Permite escolher qual exemplo executar</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Opção 0:</strong> Executa todos os exemplos em sequência</li>
+                                <li><i class="fas fa-chevron-right mr-2 text-slate-600"></i><strong>Banner ASCII:</strong> Identificação visual do programa</li>
+                            </ul>
+                        </div>
+                    </div>
 
-            currentChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [
-                        { label: 'Finanças', data: finance, backgroundColor: '#3b82f6', pointRadius: 6 },
-                        { label: 'Jurídico', data: legal, backgroundColor: '#a855f7', pointRadius: 6 },
-                        { label: 'Frutas', data: fruit, backgroundColor: '#10b981', pointRadius: 6 },
-                        { label: 'Tecnologia', data: tech, backgroundColor: '#f97316', pointRadius: 6 },
-                        { label: 'Query', data: [], backgroundColor: '#ffffff', pointRadius: 8, pointBorderColor: '#ef4444', pointBorderWidth: 2 }
-                    ]
+                    <!-- Como Executar -->
+                    <div class="card mb-8 border-l-4 border-l-green-500">
+                        <h3 class="text-lg font-bold text-white mb-4">
+                            <i class="fas fa-terminal mr-2 text-green-400"></i>Como Executar
+                        </h3>
+                        <div class="code-block-container">
+                            <button onclick="copyCode(this)" class="copy-btn"><i class="fas fa-copy mr-1"></i>Copiar</button>
+                            <pre class="language-bash"><code class="language-bash"># Ativar ambiente virtual (se ainda não ativou)
+source venv/bin/activate  # Linux/Mac
+# ou
+venv\\Scripts\\activate  # Windows
+
+# Executar o exemplo
+python exemplo_hybrid_search.py
+
+# Opção 1: BM25 (não precisa de API key)
+# Opção 2 e 3: Precisam de OPENAI_API_KEY no .env</code></pre>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-green-900/20 border border-green-700/50 rounded-lg p-3">
+                                <h4 class="text-sm font-bold text-green-400 mb-2"><i class="fas fa-check-circle mr-2"></i>Opção 1</h4>
+                                <p class="text-xs text-slate-400">BM25 puro - funciona sem API key, demonstra busca por palavras-chave</p>
+                            </div>
+                            <div class="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+                                <h4 class="text-sm font-bold text-blue-400 mb-2"><i class="fas fa-key mr-2"></i>Opção 2</h4>
+                                <p class="text-xs text-slate-400">Hybrid Search completo - requer OpenAI API para embeddings</p>
+                            </div>
+                            <div class="bg-purple-900/20 border border-purple-700/50 rounded-lg p-3">
+                                <h4 class="text-sm font-bold text-purple-400 mb-2"><i class="fas fa-balance-scale mr-2"></i>Opção 3</h4>
+                                <p class="text-xs text-slate-400">Comparação visual entre BM25 vs Semântico</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conceitos Chave -->
+                    <div class="card mb-8">
+                        <h3 class="text-lg font-bold text-white mb-4">
+                            <i class="fas fa-graduation-cap mr-2 gold-accent"></i>Conceitos-Chave Aprendidos
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <h4 class="text-sm font-bold text-blue-400 mb-2">BM25 (Best Match 25)</h4>
+                                <p class="text-xs text-slate-400">Algoritmo de ranking baseado em frequência de termos e IDF (Inverse Document Frequency). Excelente para matches exatos de palavras.</p>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <h4 class="text-sm font-bold text-green-400 mb-2">Busca Semântica</h4>
+                                <p class="text-xs text-slate-400">Usa embeddings (vetores) para encontrar documentos por similaridade de significado, não apenas palavras exatas.</p>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <h4 class="text-sm font-bold text-purple-400 mb-2">Hybrid Search</h4>
+                                <p class="text-xs text-slate-400">Combina BM25 + Semântico para obter o melhor dos dois mundos: precisão lexical e compreensão de contexto.</p>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-4">
+                                <h4 class="text-sm font-bold text-orange-400 mb-2">RRF (Reciprocal Rank Fusion)</h4>
+                                <p class="text-xs text-slate-400">Técnica para combinar rankings de múltiplos métodos de busca em um ranking final unificado.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            `;
+
+        // Re-highlight code blocks
+        if (typeof Prism !== "undefined") {
+          Prism.highlightAll();
+        }
+      }
+
+      // Exercise helpers
+      function toggleExercise(id) {
+        const content = document.getElementById("content-" + id);
+        const icon = document.getElementById("icon-" + id);
+        if (content.classList.contains("hidden")) {
+          content.classList.remove("hidden");
+          icon.classList.remove("fa-chevron-down");
+          icon.classList.add("fa-chevron-up");
+        } else {
+          content.classList.add("hidden");
+          icon.classList.remove("fa-chevron-up");
+          icon.classList.add("fa-chevron-down");
+        }
+      }
+
+      function saveNotes(exerciseId, value) {
+        localStorage.setItem("exercise-" + exerciseId, value);
+      }
+
+      function saveTaskState(exerciseId, taskIndex, checked) {
+        localStorage.setItem(exerciseId + "-task-" + taskIndex, checked);
+      }
+
+      function initVectorChart() {
+        const ctx = document.getElementById("vectorChart").getContext("2d");
+
+        // Mock Data Clusters
+        // Finance Cluster
+        const finance = [
+          { x: 0.8, y: 0.8, label: "Dinheiro" },
+          { x: 0.85, y: 0.75, label: "Banco" },
+          { x: 0.9, y: 0.82, label: "Lucro" },
+          { x: 0.75, y: 0.85, label: "Ações" },
+          { x: 0.82, y: 0.9, label: "Dólar" },
+        ];
+
+        // Legal Cluster
+        const legal = [
+          { x: 0.2, y: 0.8, label: "Contrato" },
+          { x: 0.25, y: 0.85, label: "Lei" },
+          { x: 0.15, y: 0.75, label: "Juiz" },
+          { x: 0.3, y: 0.82, label: "Advogado" },
+        ];
+
+        // Fruit Cluster (Ambiguity Test)
+        const fruit = [
+          { x: 0.5, y: 0.2, label: "Maçã" },
+          { x: 0.55, y: 0.25, label: "Banana" },
+          { x: 0.45, y: 0.15, label: "Uva" },
+        ];
+
+        // Tech Cluster (Ambiguity Test)
+        const tech = [
+          { x: 0.8, y: 0.2, label: "Apple" },
+          { x: 0.85, y: 0.15, label: "Microsoft" },
+          { x: 0.9, y: 0.25, label: "Python" },
+        ];
+
+        currentChart = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Finanças",
+                data: finance,
+                backgroundColor: "#3b82f6",
+                pointRadius: 6,
+              },
+              {
+                label: "Jurídico",
+                data: legal,
+                backgroundColor: "#a855f7",
+                pointRadius: 6,
+              },
+              {
+                label: "Frutas",
+                data: fruit,
+                backgroundColor: "#10b981",
+                pointRadius: 6,
+              },
+              {
+                label: "Tecnologia",
+                data: tech,
+                backgroundColor: "#f97316",
+                pointRadius: 6,
+              },
+              {
+                label: "Query",
+                data: [],
+                backgroundColor: "#ffffff",
+                pointRadius: 8,
+                pointBorderColor: "#ef4444",
+                pointBorderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: "#cbd5e1" } },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) =>
+                    ` ${ctx.raw.label} [${ctx.raw.x}, ${ctx.raw.y}]`,
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#cbd5e1' } },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => ` ${ctx.raw.label} [${ctx.raw.x}, ${ctx.raw.y}]`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { display: false, min: 0, max: 1 },
-                        y: { display: false, min: 0, max: 1 }
-                    }
-                }
-            });
+              },
+            },
+            scales: {
+              x: { display: false, min: 0, max: 1 },
+              y: { display: false, min: 0, max: 1 },
+            },
+          },
+        });
+      }
+
+      function simulateSearch() {
+        const query = document
+          .getElementById("query-input")
+          .value.toLowerCase();
+        const resultBox = document.getElementById("search-result");
+        resultBox.classList.remove("hidden");
+
+        // Mock logic for demo
+        let target = { x: 0.5, y: 0.5, label: query }; // default center
+
+        if (
+          ["investimento", "dinheiro", "taxa", "juros"].some((w) =>
+            query.includes(w),
+          )
+        ) {
+          target = { x: 0.82, y: 0.82, label: query };
+        } else if (
+          ["processo", "multa", "réu"].some((w) => query.includes(w))
+        ) {
+          target = { x: 0.22, y: 0.82, label: query };
         }
 
-        function simulateSearch() {
-            const query = document.getElementById('query-input').value.toLowerCase();
-            const resultBox = document.getElementById('search-result');
-            resultBox.classList.remove('hidden');
-            
-            // Mock logic for demo
-            let target = { x: 0.5, y: 0.5, label: query }; // default center
-            
-            if (['investimento', 'dinheiro', 'taxa', 'juros'].some(w => query.includes(w))) {
-                target = { x: 0.82, y: 0.82, label: query };
-            } else if (['processo', 'multa', 'réu'].some(w => query.includes(w))) {
-                target = { x: 0.22, y: 0.82, label: query };
-            }
+        // Update chart
+        currentChart.data.datasets[4].data = [target];
+        currentChart.update();
+      }
 
-            // Update chart
-            currentChart.data.datasets[4].data = [target];
-            currentChart.update();
-        }
-
-        function renderChunking(container) {
-            container.innerHTML = `
+      function renderChunking(container) {
+        container.innerHTML = `
                 <div class="max-w-4xl mx-auto fade-in">
                     <h2 class="text-2xl font-bold text-white mb-6">Estratégias de Chunking</h2>
                     
@@ -3682,44 +4588,74 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")</code></pre>
                     </div>
                 </div>
             `;
-            setChunkMode('recursive'); // Default
-        }
+        setChunkMode("recursive"); // Default
+      }
 
-        function setChunkMode(mode) {
-            const display = document.getElementById('chunk-display');
-            let html = '';
-            
-            if (mode === 'char') {
-                // Mock char split
-                const chunks = CONTRACT_TEXT.match(/.{1,150}/g);
-                html = chunks.map((c, i) => `<span class="bg-slate-800 border-b-2 border-slate-600 hover:bg-slate-700 px-1 py-0.5 mx-0.5" title="Chunk ${i}">${c}</span>`).join('');
-            } else if (mode === 'recursive') {
-                // Mock recursive (split by paragraph roughly)
-                const chunks = CONTRACT_TEXT.split('\n\n');
-                html = chunks.map((c, i) => `
+      function setChunkMode(mode) {
+        const display = document.getElementById("chunk-display");
+        let html = "";
+
+        if (mode === "char") {
+          // Mock char split
+          const chunks = CONTRACT_TEXT.match(/.{1,150}/g);
+          html = chunks
+            .map(
+              (c, i) =>
+                `<span class="bg-slate-800 border-b-2 border-slate-600 hover:bg-slate-700 px-1 py-0.5 mx-0.5" title="Chunk ${i}">${c}</span>`,
+            )
+            .join("");
+        } else if (mode === "recursive") {
+          // Mock recursive (split by paragraph roughly)
+          const chunks = CONTRACT_TEXT.split("\n\n");
+          html = chunks
+            .map(
+              (c, i) => `
                     <div class="mb-4 p-3 bg-slate-800/50 border-l-4 border-blue-500 rounded hover:bg-slate-800 transition">
-                        <span class="text-[10px] text-blue-400 font-bold block mb-1">CHUNK ID: ${i} | TOKENS: ~${c.length/4}</span>
-                        ${c.replace(/\n/g, '<br>')}
-                    </div>`).join('');
-            } else if (mode === 'semantic') {
-                // Mock semantic grouping
-                const groups = [
-                    { title: "Definição Financeira", color: "border-green-500", content: CONTRACT_TEXT.split('CLÁUSULA SEGUNDA')[0] },
-                    { title: "Condições de Juros", color: "border-yellow-500", content: 'CLÁUSULA SEGUNDA' + CONTRACT_TEXT.split('CLÁUSULA SEGUNDA')[1].split('CLÁUSULA QUARTA')[0] },
-                    { title: "Garantias & Penalidades", color: "border-red-500", content: 'CLÁUSULA QUARTA' + CONTRACT_TEXT.split('CLÁUSULA QUARTA')[1] }
-                ];
-                html = groups.map((g, i) => `
+                        <span class="text-[10px] text-blue-400 font-bold block mb-1">CHUNK ID: ${i} | TOKENS: ~${c.length / 4}</span>
+                        ${c.replace(/\n/g, "<br>")}
+                    </div>`,
+            )
+            .join("");
+        } else if (mode === "semantic") {
+          // Mock semantic grouping
+          const groups = [
+            {
+              title: "Definição Financeira",
+              color: "border-green-500",
+              content: CONTRACT_TEXT.split("CLÁUSULA SEGUNDA")[0],
+            },
+            {
+              title: "Condições de Juros",
+              color: "border-yellow-500",
+              content:
+                "CLÁUSULA SEGUNDA" +
+                CONTRACT_TEXT.split("CLÁUSULA SEGUNDA")[1].split(
+                  "CLÁUSULA QUARTA",
+                )[0],
+            },
+            {
+              title: "Garantias & Penalidades",
+              color: "border-red-500",
+              content:
+                "CLÁUSULA QUARTA" + CONTRACT_TEXT.split("CLÁUSULA QUARTA")[1],
+            },
+          ];
+          html = groups
+            .map(
+              (g, i) => `
                     <div class="mb-6 p-4 bg-slate-800/30 border-2 ${g.color} rounded-lg relative">
                         <span class="absolute -top-3 left-4 bg-slate-900 px-2 text-xs font-bold text-slate-300 border border-slate-700 rounded">${g.title}</span>
-                        ${g.content.replace(/\n/g, '<br>')}
-                    </div>`).join('');
-            }
-
-            display.innerHTML = html;
+                        ${g.content.replace(/\n/g, "<br>")}
+                    </div>`,
+            )
+            .join("");
         }
 
-        function renderLab(container) {
-            container.innerHTML = `
+        display.innerHTML = html;
+      }
+
+      function renderLab(container) {
+        container.innerHTML = `
                 <div class="h-full flex flex-col md:flex-row gap-6 fade-in">
                     <!-- Left: Ingestion & Chat -->
                     <div class="w-full md:w-1/3 flex flex-col gap-4">
@@ -3821,28 +4757,32 @@ INSTRUÇÃO: Extraia um JSON com as chaves: garantia_tipo, valor_estimado, statu
                     </div>
                 </div>
             `;
-        }
+      }
 
-        // --- LAB LOGIC ---
+      // --- LAB LOGIC ---
 
-        function startIngestion() {
-            const progress = document.getElementById('ingest-progress');
-            const status = document.getElementById('ingest-status');
-            progress.classList.remove('hidden');
-            
-            status.innerText = "Lendo PDF...";
-            setTimeout(() => { status.innerText = "Chunking (Recursive)..."; }, 800);
-            setTimeout(() => { status.innerText = "Embedding (OpenAI ada-002)..."; }, 1600);
-            setTimeout(() => { 
-                status.innerText = "Indexing in ChromaDB..."; 
-            }, 2400);
-            setTimeout(() => {
-                status.innerText = "Pronto!";
-                status.classList.add('text-green-400');
-                
-                // Add system message
-                const chat = document.getElementById('chat-history');
-                chat.innerHTML += `
+      function startIngestion() {
+        const progress = document.getElementById("ingest-progress");
+        const status = document.getElementById("ingest-status");
+        progress.classList.remove("hidden");
+
+        status.innerText = "Lendo PDF...";
+        setTimeout(() => {
+          status.innerText = "Chunking (Recursive)...";
+        }, 800);
+        setTimeout(() => {
+          status.innerText = "Embedding (OpenAI ada-002)...";
+        }, 1600);
+        setTimeout(() => {
+          status.innerText = "Indexing in ChromaDB...";
+        }, 2400);
+        setTimeout(() => {
+          status.innerText = "Pronto!";
+          status.classList.add("text-green-400");
+
+          // Add system message
+          const chat = document.getElementById("chat-history");
+          chat.innerHTML += `
                     <div class="flex gap-3 fade-in">
                         <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]"><i class="fas fa-robot"></i></div>
                         <div class="bg-slate-800 p-2 rounded-lg rounded-tl-none text-xs text-slate-300 max-w-[80%]">
@@ -3850,32 +4790,32 @@ INSTRUÇÃO: Extraia um JSON com as chaves: garantia_tipo, valor_estimado, statu
                         </div>
                     </div>
                 `;
-            }, 3000);
-        }
+        }, 3000);
+      }
 
-        function runAgent() {
-            const input = document.getElementById('agent-input');
-            const text = input.value;
-            if(!text) return;
+      function runAgent() {
+        const input = document.getElementById("agent-input");
+        const text = input.value;
+        if (!text) return;
 
-            // User msg
-            const chat = document.getElementById('chat-history');
-            chat.innerHTML += `
+        // User msg
+        const chat = document.getElementById("chat-history");
+        chat.innerHTML += `
                 <div class="flex gap-3 justify-end fade-in">
                     <div class="bg-blue-900/50 border border-blue-800 p-2 rounded-lg rounded-tr-none text-xs text-white max-w-[80%]">
                         ${text}
                     </div>
                 </div>
             `;
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
+        input.value = "";
+        chat.scrollTop = chat.scrollHeight;
 
-            // Trigger Animation Pipeline
-            animatePipeline();
+        // Trigger Animation Pipeline
+        animatePipeline();
 
-            // Final Agent Response
-            setTimeout(() => {
-                chat.innerHTML += `
+        // Final Agent Response
+        setTimeout(() => {
+          chat.innerHTML += `
                     <div class="flex gap-3 fade-in">
                         <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px]"><i class="fas fa-robot"></i></div>
                         <div class="bg-slate-800 p-2 rounded-lg rounded-tl-none text-xs text-slate-300 max-w-[80%]">
@@ -3883,89 +4823,92 @@ INSTRUÇÃO: Extraia um JSON com as chaves: garantia_tipo, valor_estimado, statu
                         </div>
                     </div>
                 `;
-                chat.scrollTop = chat.scrollHeight;
-            }, 4000);
-        }
+          chat.scrollTop = chat.scrollHeight;
+        }, 4000);
+      }
 
-        function animatePipeline() {
-            const steps = ['viz-retrieval', 'viz-prompt', 'viz-output'];
-            
-            // Reset
-            steps.forEach(id => {
-                const el = document.getElementById(id);
-                el.classList.add('opacity-20');
-                el.classList.remove('opacity-100', 'pulse-border');
-            });
+      function animatePipeline() {
+        const steps = ["viz-retrieval", "viz-prompt", "viz-output"];
 
-            // Step 1
-            setTimeout(() => {
-                const el = document.getElementById('viz-retrieval');
-                el.classList.remove('opacity-20');
-                el.classList.add('opacity-100', 'pulse-border');
-            }, 500);
-
-            // Step 2
-            setTimeout(() => {
-                document.getElementById('viz-retrieval').classList.remove('pulse-border');
-                const el = document.getElementById('viz-prompt');
-                el.classList.remove('opacity-20');
-                el.classList.add('opacity-100', 'pulse-border');
-            }, 1800);
-
-            // Step 3
-            setTimeout(() => {
-                document.getElementById('viz-prompt').classList.remove('pulse-border');
-                const el = document.getElementById('viz-output');
-                el.classList.remove('opacity-20');
-                el.classList.add('opacity-100', 'pulse-border');
-            }, 3000);
-        }
-
-        // Init
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load first page
-            router('intro-rag');
-            
-            // Add keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                // Ctrl/Cmd + K para focar na busca (futuro)
-                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                    e.preventDefault();
-                    // Future: focus search box
-                }
-                
-                // ESC para fechar mobile menu
-                if (e.key === 'Escape') {
-                    const mobileMenu = document.getElementById('mobile-menu');
-                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                        toggleMobileMenu();
-                    }
-                }
-            });
-            
-            // Add aria-labels to nav items
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                if (!btn.getAttribute('aria-label')) {
-                    btn.setAttribute('aria-label', btn.textContent.trim());
-                    btn.setAttribute('role', 'button');
-                    btn.setAttribute('tabindex', '0');
-                    
-                    // Enter key navigation
-                    btn.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            btn.click();
-                        }
-                    });
-                }
-            });
-            
-            // Print stylesheet warning
-            window.addEventListener('beforeprint', () => {
-                console.log('📄 Preparando para impressão...');
-            });
+        // Reset
+        steps.forEach((id) => {
+          const el = document.getElementById(id);
+          el.classList.add("opacity-20");
+          el.classList.remove("opacity-100", "pulse-border");
         });
 
+        // Step 1
+        setTimeout(() => {
+          const el = document.getElementById("viz-retrieval");
+          el.classList.remove("opacity-20");
+          el.classList.add("opacity-100", "pulse-border");
+        }, 500);
+
+        // Step 2
+        setTimeout(() => {
+          document
+            .getElementById("viz-retrieval")
+            .classList.remove("pulse-border");
+          const el = document.getElementById("viz-prompt");
+          el.classList.remove("opacity-20");
+          el.classList.add("opacity-100", "pulse-border");
+        }, 1800);
+
+        // Step 3
+        setTimeout(() => {
+          document
+            .getElementById("viz-prompt")
+            .classList.remove("pulse-border");
+          const el = document.getElementById("viz-output");
+          el.classList.remove("opacity-20");
+          el.classList.add("opacity-100", "pulse-border");
+        }, 3000);
+      }
+
+      // Init
+      document.addEventListener("DOMContentLoaded", () => {
+        // Load first page
+        router("intro-rag");
+
+        // Add keyboard navigation
+        document.addEventListener("keydown", (e) => {
+          // Ctrl/Cmd + K para focar na busca (futuro)
+          if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+            e.preventDefault();
+            // Future: focus search box
+          }
+
+          // ESC para fechar mobile menu
+          if (e.key === "Escape") {
+            const mobileMenu = document.getElementById("mobile-menu");
+            if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
+              toggleMobileMenu();
+            }
+          }
+        });
+
+        // Add aria-labels to nav items
+        document.querySelectorAll(".nav-item").forEach((btn) => {
+          if (!btn.getAttribute("aria-label")) {
+            btn.setAttribute("aria-label", btn.textContent.trim());
+            btn.setAttribute("role", "button");
+            btn.setAttribute("tabindex", "0");
+
+            // Enter key navigation
+            btn.addEventListener("keypress", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                btn.click();
+              }
+            });
+          }
+        });
+
+        // Print stylesheet warning
+        window.addEventListener("beforeprint", () => {
+          console.log("📄 Preparando para impressão...");
+        });
+      });
     </script>
-</body>
+  </body>
 </html>
